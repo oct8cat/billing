@@ -3,30 +3,22 @@ import { TCharge, TChargeModel } from "../models/Charge";
 import { TChargeAttempt, TChargeAttemptModel } from "../models/ChargeAttempt";
 
 export type TChargesService = {
-  findCharges(filterQuery: FilterQuery<TCharge>): ReturnType<TChargeModel["find"]>;
-  findCharge(filterQuery: FilterQuery<TCharge>): ReturnType<TChargeModel["findOne"]>;
-  findPendingCharges(): ReturnType<TChargeModel["find"]>;
-  createCharge(input: Pick<TCharge, TCreateChargeKeys>): Promise<TCharge>;
-  updateCharge(charge: TCharge, input: Pick<TCharge, TUpdateChargeKeys>): Promise<TCharge>;
-  //
-  findChargeAttempt(filterQuery: FilterQuery<TChargeAttempt>): ReturnType<TChargeAttemptModel["findOne"]>;
-  createChargeAttempt(input: Pick<TChargeAttempt, TCreateChargeAttemptKeys>): Promise<TChargeAttempt>;
-  updateChargeAttempt(
-    chargeAttempt: TChargeAttempt,
-    input: Pick<TChargeAttempt, TUpdateChargeAttemptKeys>
-  ): Promise<TChargeAttempt>;
+  findCharges(filterQuery: FilterQuery<TCharge>): TFindChargesQuery;
+  findCharge(filterQuery: FilterQuery<TCharge>): TFindChargeQuery;
+  findPendingCharges(): TFindChargesQuery;
+  createCharge(input: TCreateChargeInput): Promise<TCharge>;
+  updateCharge(charge: TCharge, input: TUpdateChargeInput): Promise<TCharge>;
+
+  findChargeAttempt(filterQuery: FilterQuery<TChargeAttempt>): TFindChargeAttemptQuery;
+  createChargeAttempt(input: TCreateChargeAttemptInput): Promise<TChargeAttempt>;
+  updateChargeAttempt(chargeAttempt: TChargeAttempt, input: TUpdateChargeAttemptInput): Promise<TChargeAttempt>;
 };
 
-//
-
-export type TCreateChargeKeys = "subscription" | "customer" | "nextChargeAttemptAt" | "status";
-export type TUpdateChargeKeys = "nextChargeAttemptAt" | "status";
-export type TCreateChargeAttemptKeys = "subscription" | "customer" | "status" | "charge";
-export type TUpdateChargeAttemptKeys = "status";
-
-//
-
-export default (Charge: TChargeModel, ChargeAttempt: TChargeAttemptModel): TChargesService => ({
+export default (
+  // @inject
+  Charge: TChargeModel,
+  ChargeAttempt: TChargeAttemptModel
+): TChargesService => ({
   findCharges(filterQuery) {
     return Charge.find(filterQuery);
   },
@@ -43,7 +35,7 @@ export default (Charge: TChargeModel, ChargeAttempt: TChargeAttemptModel): TChar
     charge.set(input);
     return charge.save();
   },
-  //
+
   findChargeAttempt(filterQuery) {
     return ChargeAttempt.findOne(filterQuery);
   },
@@ -55,3 +47,17 @@ export default (Charge: TChargeModel, ChargeAttempt: TChargeAttemptModel): TChar
     return chargeAttempt.save();
   },
 });
+
+export type TFindChargesQuery = ReturnType<TChargeModel["find"]>;
+
+export type TFindChargeQuery = ReturnType<TChargeModel["findOne"]>;
+
+export type TCreateChargeInput = Pick<TCharge, "subscription" | "customer" | "nextChargeAttemptAt" | "status">;
+
+export type TUpdateChargeInput = Pick<TCharge, "nextChargeAttemptAt" | "status">;
+
+export type TCreateChargeAttemptInput = Pick<TChargeAttempt, "subscription" | "customer" | "status" | "charge">;
+
+export type TFindChargeAttemptQuery = ReturnType<TChargeAttemptModel["findOne"]>;
+
+export type TUpdateChargeAttemptInput = Pick<TChargeAttempt, "status">;

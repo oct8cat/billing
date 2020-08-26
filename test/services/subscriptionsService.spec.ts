@@ -4,9 +4,9 @@ import { EJob } from "../../src/types";
 
 import { Subscription } from "../../src/models/Subscription";
 import { Customer } from "../../src/models/Customer";
-import { Charge } from "../../src/models/Charge";
+import { Charge, EChargeStatus } from "../../src/models/Charge";
 import { ESubscriptionSpellPeriod, SubscriptionSpell } from "../../src/models/SubscriptionSpell";
-import { ChargeAttempt } from "../../src/models/ChargeAttempt";
+import { ChargeAttempt, EChargeAttemptStatus } from "../../src/models/ChargeAttempt";
 
 import makeSubscriptionService from "../../src/services/subscriptionsService";
 import makeChargeService from "../../src/services/chargesService";
@@ -16,7 +16,12 @@ import makeJobsService from "../../src/services/jobsService";
 describe("subscriptionsService", () => {
   const chargesService = makeChargeService(Charge, ChargeAttempt);
   const customersService = makeCustomerService(Customer);
-  const subscriptionsService = makeSubscriptionService(Subscription, SubscriptionSpell, chargesService, customersService);
+  const subscriptionsService = makeSubscriptionService(
+    Subscription,
+    SubscriptionSpell,
+    chargesService,
+    customersService
+  );
   const jobsService = makeJobsService(new Agenda(), subscriptionsService, chargesService);
 
   beforeEach(() => {
@@ -27,7 +32,9 @@ describe("subscriptionsService", () => {
     it("Handles pending subscriptions", async () => {
       const subscriptions = [new Subscription(), new Subscription()];
 
-      const findPendingSubscriptions = sinon.stub(subscriptionsService, "findPendingSubscriptions").resolves(subscriptions);
+      const findPendingSubscriptions = sinon
+        .stub(subscriptionsService, "findPendingSubscriptions")
+        .resolves(subscriptions);
       const handlePendingSubscription = sinon.stub(subscriptionsService, "handlePendingSubscription");
 
       await subscriptionsService.handlePendingSubscriptions();
@@ -42,7 +49,9 @@ describe("subscriptionsService", () => {
       const customer = new Customer();
       const subscription = new Subscription();
       const pendingCharge = new Charge();
-      const subscriptionSpell = new SubscriptionSpell({ period: ESubscriptionSpellPeriod.MONTHLY });
+      const subscriptionSpell = new SubscriptionSpell({
+        period: ESubscriptionSpellPeriod.MONTHLY,
+      });
 
       sinon.stub(customersService, "findCustomer").resolves(customer);
       sinon.stub(subscriptionsService, "findSubscriptionSpell").resolves(subscriptionSpell);
@@ -55,7 +64,7 @@ describe("subscriptionsService", () => {
         subscription,
         customer,
         nextChargeAttemptAt: sinon.match.date,
-        status: "pending",
+        status: EChargeStatus.PENDING,
       });
 
       sinon.assert.calledWith(updateSubscription, subscription, {
@@ -91,13 +100,18 @@ describe("subscriptionsService", () => {
 
       await subscriptionsService.handlePendingCharge(jobsService, charge);
 
-      sinon.assert.calledWith(createChargeAttempt, { charge, status: "pending", subscription, customer });
+      sinon.assert.calledWith(createChargeAttempt, {
+        charge,
+        status: EChargeAttemptStatus.PENDING,
+        subscription,
+        customer,
+      });
       sinon.assert.calledWith(scheduleJob, EJob.PROCESS_PENDING_CHARGE_ATTEMPT, { chargeAttemptId: chargeAttempt.id });
     });
   });
 
-  describe("processPendingChargeAttempt", () => {
-    it("Processes pending charge attempt", async () => {
+  describe("handlePendingChargeAttempt", () => {
+    it("Handles pending charge attempt", async () => {
       const subscription = new Subscription();
       const customer = new Customer();
       const charge = new Charge({ subscription, customer });
@@ -109,11 +123,18 @@ describe("subscriptionsService", () => {
       sinon.stub(subscriptionsService, "findSubscription").resolves(subscription);
       const updateSubscription = sinon.stub(subscriptionsService, "updateSubscription");
 
-      await subscriptionsService.processPendingChargeAttempt(chargeAttempt);
+      await subscriptionsService.handlePendingChargeAttempt(chargeAttempt);
 
-      sinon.assert.calledWith(updateChargeAttempt, chargeAttempt, { status: "success" });
-      sinon.assert.calledWith(updateCharge, charge, { status: "success", nextChargeAttemptAt: null });
-      sinon.assert.calledWith(updateSubscription, subscription, { pendingCharge: null });
+      sinon.assert.calledWith(updateChargeAttempt, chargeAttempt, {
+        status: EChargeAttemptStatus.SUCCESS,
+      });
+      sinon.assert.calledWith(updateCharge, charge, {
+        status: EChargeStatus.SUCCESS,
+        nextChargeAttemptAt: null,
+      });
+      sinon.assert.calledWith(updateSubscription, subscription, {
+        pendingCharge: null,
+      });
     });
   });
 });

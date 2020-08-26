@@ -1,16 +1,16 @@
 {
   "name": "billing",
   "version": "1.0.0",
-  "description": "",
   "main": "index.js",
   "directories": {
     "test": "test"
   },
   "scripts": {
-    "test": "mocha"
+    "test": "mocha",
+    "fix": "prettier --write src test"
   },
   "keywords": [],
-  "author": "",
+  "author": "Sergey Elsukov <oct8cat@gmail.com>",
   "license": "ISC",
   "devDependencies": {
     "@types/agenda": "^2.0.9",
@@ -36,7 +36,16 @@
     "recursive": true,
     "require": "ts-node/register"
   },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/oct8cat/billing.git"
+  },
+  "bugs": {
+    "url": "https://github.com/oct8cat/billing/issues"
+  },
+  "homepage": "https://github.com/oct8cat/billing#readme",
+  "description": "",
   "prettier": {
-    "printWidth": 130
+    "printWidth": 120
   }
 }

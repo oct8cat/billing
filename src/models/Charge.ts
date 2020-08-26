@@ -2,13 +2,17 @@ import mongoose, { Schema, Document, Model } from "mongoose";
 import { TCustomer } from "./Customer";
 import { TSubscription } from "./Subscription";
 
-export type TChargeStatus = "pending" | "success" | "failed";
+export enum EChargeStatus {
+  PENDING = "pending",
+  SUCCESS = "success",
+  FAILED = "failed",
+}
 
 export type TCharge = Document & {
   customer: TCustomer;
   subscription: TSubscription;
   nextChargeAttemptAt: Date | null;
-  status: TChargeStatus;
+  status: EChargeStatus;
 };
 
 export type TChargeModel = Model<TCharge>;
@@ -22,6 +26,11 @@ export const ChargeSchema = new Schema({
   subscription: {
     type: Schema.Types.ObjectId,
     ref: "Subscription",
+    required: true,
+  },
+  status: {
+    type: Schema.Types.String,
+    enum: Object.values(EChargeStatus),
     required: true,
   },
 });

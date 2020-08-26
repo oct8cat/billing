@@ -14,7 +14,4 @@ export const CustomerSchema = new Schema({
   },
 });
 
-export const Customer = mongoose.model<TCustomer, TCustomerModel>(
-  "Customer",
-  CustomerSchema
-);
+export const Customer = mongoose.model<TCustomer, TCustomerModel>("Customer", CustomerSchema);

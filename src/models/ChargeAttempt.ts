@@ -3,12 +3,16 @@ import { TCustomer } from "./Customer";
 import { TSubscription } from "./Subscription";
 import { TCharge } from "./Charge";
 
-export type TChargeAttemptStatus = "pending" | "success" | "failed";
+export enum EChargeAttemptStatus {
+  PENDING = "pending",
+  SUCCESS = "success",
+  FAILED = "failed",
+}
 
 export type TChargeAttempt = Document & {
   customer: TCustomer;
   subscription: TSubscription;
-  status: TChargeAttemptStatus;
+  status: EChargeAttemptStatus;
   charge: TCharge;
 };
 
@@ -27,11 +31,9 @@ export const ChargeAttemptSchema = new Schema({
   },
   status: {
     type: Schema.Types.String,
+    enum: Object.values(EChargeAttemptStatus),
     required: true,
   },
 });
 
-export const ChargeAttempt = mongoose.model<TChargeAttempt, TChargeAttemptModel>(
-  "ChargeAttempt",
-  ChargeAttemptSchema
-);
+export const ChargeAttempt = mongoose.model<TChargeAttempt, TChargeAttemptModel>("ChargeAttempt", ChargeAttemptSchema);
