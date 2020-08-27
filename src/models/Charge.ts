@@ -8,11 +8,19 @@ export enum EChargeStatus {
   FAILED = "failed",
 }
 
+export type TStripeChargeData = {
+  stripeCustomer: string;
+  stripePaymentIntent: string;
+};
+
+export type TChargeData = TStripeChargeData;
+
 export type TCharge = Document & {
   customer: TCustomer;
   subscription: TSubscription;
   nextChargeAttemptAt: Date | null;
   status: EChargeStatus;
+  data?: TChargeData;
 };
 
 export type TChargeModel = Model<TCharge>;
@@ -31,6 +39,10 @@ export const ChargeSchema = new Schema({
   status: {
     type: Schema.Types.String,
     enum: Object.values(EChargeStatus),
+    required: true,
+  },
+  data: {
+    type: Schema.Types.Mixed,
     required: true,
   },
 });

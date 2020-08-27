@@ -54,9 +54,9 @@ export type TFindChargeQuery = ReturnType<TChargeModel["findOne"]>;
 
 export type TCreateChargeInput = Pick<TCharge, "subscription" | "customer" | "nextChargeAttemptAt" | "status">;
 
-export type TUpdateChargeInput = Pick<TCharge, "nextChargeAttemptAt" | "status">;
+export type TUpdateChargeInput = Pick<TCharge, "nextChargeAttemptAt" | "status" | "data">;
 
-export type TCreateChargeAttemptInput = Pick<TChargeAttempt, "subscription" | "customer" | "status" | "charge">;
+export type TCreateChargeAttemptInput = Pick<TChargeAttempt, "customer" | "status" | "charge">;
 
 export type TFindChargeAttemptQuery = ReturnType<TChargeAttemptModel["findOne"]>;
 

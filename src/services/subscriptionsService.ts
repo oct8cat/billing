@@ -1,14 +1,19 @@
 import assert from "assert";
+import Stripe from "stripe";
 import { FilterQuery } from "mongoose";
 import { DateTime } from "luxon";
 import { EJob } from "../types";
+
 import { TSubscription, TSubscriptionModel } from "../models/Subscription";
 import { TSubscriptionSpell, TSubscriptionSpellModel } from "../models/SubscriptionSpell";
 import { EChargeStatus, TCharge } from "../models/Charge";
 import { EChargeAttemptStatus, TChargeAttempt } from "../models/ChargeAttempt";
+import { TStripePaymentMethodData } from "../models/PaymentMethod";
+
 import { TChargesService } from "./chargesService";
 import { TJobsService } from "./jobsService";
 import { TCustomersService } from "./customersService";
+import { TPaymentMethodService } from "./paymentMethodsService";
 
 export type TSubscriptionsService = {
   findPendingSubscriptions(): TFindSubscriptionsQuery;
@@ -31,7 +36,9 @@ export default (
   Subscription: TSubscriptionModel,
   SubscriptionSpell: TSubscriptionSpellModel,
   chargesService: TChargesService,
-  customersService: TCustomersService
+  customersService: TCustomersService,
+  stripe: Stripe,
+  paymentMethodService: TPaymentMethodService
 ): TSubscriptionsService => ({
   findPendingSubscriptions() {
     return Subscription.find({ nextChargeAt: { $lte: new Date() } });
@@ -69,11 +76,10 @@ export default (
       nextChargeAttemptAt: new Date(),
       status: EChargeStatus.PENDING,
     });
-    const nextChargeAt = this.getNextChargeAt(subscriptionSpell);
 
     return this.updateSubscription(subscription, {
       pendingCharge,
-      nextChargeAt,
+      nextChargeAt: this.getNextChargeAt(subscriptionSpell),
     });
   },
   async handlePendingCharges(jobsService) {
@@ -84,7 +90,6 @@ export default (
     const chargeAttempt = await chargesService.createChargeAttempt({
       charge,
       status: EChargeAttemptStatus.PENDING,
-      subscription: charge.subscription,
       customer: charge.customer,
     });
     const chargeAttemptId = chargeAttempt.id;
@@ -93,23 +98,47 @@ export default (
     });
   },
   async handlePendingChargeAttempt(chargeAttempt) {
-    await chargesService.updateChargeAttempt(chargeAttempt, {
-      status: EChargeAttemptStatus.SUCCESS,
-    });
-
     const charge = await chargesService.findCharge({
       _id: chargeAttempt.charge,
     });
     assert.ok(charge, "Charge not found");
+
+    const subscription = await this.findSubscription({
+      _id: charge.subscription,
+    });
+    assert.ok(subscription, "Subscription not found");
+
+    const subscriptionSpell = await this.findSubscriptionSpell({
+      _id: subscription.subscriptionSpell,
+    });
+    assert.ok(subscriptionSpell, "SubscriptionSpell not found");
+
+    const paymentMethod = await paymentMethodService.findPaymentMethod({ _id: subscriptionSpell.paymentMethod });
+    assert.ok(paymentMethod, "PaymentMethod not found");
+
+    const paymentMethodData = paymentMethod.data as TStripePaymentMethodData;
+
+    const stripePaymentIntent = await stripe.paymentIntents.create({
+      customer: paymentMethodData.stripeCustomer,
+      amount: subscriptionSpell.amount,
+      currency: subscriptionSpell.currency,
+      payment_method: paymentMethodData.stripePaymentMethod,
+      confirm: true,
+    });
+
+    await chargesService.updateChargeAttempt(chargeAttempt, {
+      status: EChargeAttemptStatus.SUCCESS,
+    });
+
     await chargesService.updateCharge(charge, {
       status: EChargeStatus.SUCCESS,
       nextChargeAttemptAt: null,
+      data: {
+        stripePaymentIntent: stripePaymentIntent.id,
+        stripeCustomer: paymentMethodData.stripeCustomer,
+      },
     });
 
-    const subscription = await this.findSubscription({
-      _id: chargeAttempt.subscription,
-    });
-    assert.ok(subscription, "Subscription not found");
     await this.updateSubscription(subscription, { pendingCharge: null });
   },
 

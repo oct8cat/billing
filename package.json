@@ -27,7 +27,8 @@
   "dependencies": {
     "agenda": "^3.1.0",
     "luxon": "^1.24.1",
-    "mongoose": "^5.10.0"
+    "mongoose": "^5.10.0",
+    "stripe": "^8.89.0"
   },
   "mocha": {
     "extension": [

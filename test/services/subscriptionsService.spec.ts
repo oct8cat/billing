@@ -1,5 +1,6 @@
 import sinon from "sinon";
 import Agenda from "agenda";
+import Stripe from "stripe";
 import { EJob } from "../../src/types";
 
 import { Subscription } from "../../src/models/Subscription";
@@ -7,22 +8,32 @@ import { Customer } from "../../src/models/Customer";
 import { Charge, EChargeStatus } from "../../src/models/Charge";
 import { ESubscriptionSpellPeriod, SubscriptionSpell } from "../../src/models/SubscriptionSpell";
 import { ChargeAttempt, EChargeAttemptStatus } from "../../src/models/ChargeAttempt";
+import { PaymentMethod, TStripePaymentMethodData } from "../../src/models/PaymentMethod";
 
 import makeSubscriptionService from "../../src/services/subscriptionsService";
 import makeChargeService from "../../src/services/chargesService";
 import makeCustomerService from "../../src/services/customersService";
 import makeJobsService from "../../src/services/jobsService";
+import makePaymentMethodService from "../../src/services/paymentMethodsService";
+
+const stripeApiKey =
+  "sk_test_51HKsbdHa1XCU8vuaYYjs3ehwiTJRC7c3bfIOXqQFZSw912EQSkt68XcJNjw6Up2FhrHrwAYHleojABSfivJu7UPY00DBUCiTil";
 
 describe("subscriptionsService", () => {
   const chargesService = makeChargeService(Charge, ChargeAttempt);
   const customersService = makeCustomerService(Customer);
+  const stripe = new Stripe(stripeApiKey, { apiVersion: "2020-03-02" });
+  const paymentMethodsService = makePaymentMethodService(PaymentMethod);
   const subscriptionsService = makeSubscriptionService(
     Subscription,
     SubscriptionSpell,
     chargesService,
-    customersService
+    customersService,
+    stripe,
+    paymentMethodsService
   );
-  const jobsService = makeJobsService(new Agenda(), subscriptionsService, chargesService);
+  const agenda = new Agenda();
+  const jobsService = makeJobsService(agenda, subscriptionsService, chargesService);
 
   beforeEach(() => {
     sinon.restore();
@@ -103,7 +114,6 @@ describe("subscriptionsService", () => {
       sinon.assert.calledWith(createChargeAttempt, {
         charge,
         status: EChargeAttemptStatus.PENDING,
-        subscription,
         customer,
       });
       sinon.assert.calledWith(scheduleJob, EJob.PROCESS_PENDING_CHARGE_ATTEMPT, { chargeAttemptId: chargeAttempt.id });
@@ -113,14 +123,25 @@ describe("subscriptionsService", () => {
   describe("handlePendingChargeAttempt", () => {
     it("Handles pending charge attempt", async () => {
       const subscription = new Subscription();
+      const subscriptionSpell = new SubscriptionSpell({ amount: 420, currency: "USD" });
       const customer = new Customer();
       const charge = new Charge({ subscription, customer });
       const chargeAttempt = new ChargeAttempt();
+      const paymentMethodData: TStripePaymentMethodData = {
+        stripePaymentMethod: "stripePaymentMethod",
+        stripeCustomer: "stripeCustomer",
+      };
+      const paymentMethod = new PaymentMethod({ data: paymentMethodData });
+      const stripePaymentIntent = { id: "stripePaymentIntent" } as Stripe.PaymentIntent;
+      const stripeCustomer = { id: "stripeCustomer" } as Stripe.Customer;
 
-      const updateChargeAttempt = sinon.stub(chargesService, "updateChargeAttempt");
+      sinon.stub(stripe.paymentIntents, "create").resolves(stripePaymentIntent);
       sinon.stub(chargesService, "findCharge").resolves(charge);
-      const updateCharge = sinon.stub(chargesService, "updateCharge");
       sinon.stub(subscriptionsService, "findSubscription").resolves(subscription);
+      sinon.stub(subscriptionsService, "findSubscriptionSpell").resolves(subscriptionSpell);
+      sinon.stub(paymentMethodsService, "findPaymentMethod").resolves(paymentMethod);
+      const updateChargeAttempt = sinon.stub(chargesService, "updateChargeAttempt");
+      const updateCharge = sinon.stub(chargesService, "updateCharge");
       const updateSubscription = sinon.stub(subscriptionsService, "updateSubscription");
 
       await subscriptionsService.handlePendingChargeAttempt(chargeAttempt);
@@ -131,6 +152,10 @@ describe("subscriptionsService", () => {
       sinon.assert.calledWith(updateCharge, charge, {
         status: EChargeStatus.SUCCESS,
         nextChargeAttemptAt: null,
+        data: {
+          stripeCustomer: stripeCustomer.id,
+          stripePaymentIntent: stripePaymentIntent.id,
+        },
       });
       sinon.assert.calledWith(updateSubscription, subscription, {
         pendingCharge: null,

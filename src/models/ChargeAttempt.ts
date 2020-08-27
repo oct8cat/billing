@@ -1,6 +1,5 @@
 import mongoose, { Schema, Document, Model } from "mongoose";
 import { TCustomer } from "./Customer";
-import { TSubscription } from "./Subscription";
 import { TCharge } from "./Charge";
 
 export enum EChargeAttemptStatus {
@@ -11,7 +10,6 @@ export enum EChargeAttemptStatus {
 
 export type TChargeAttempt = Document & {
   customer: TCustomer;
-  subscription: TSubscription;
   status: EChargeAttemptStatus;
   charge: TCharge;
 };
