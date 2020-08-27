@@ -15,26 +15,26 @@ import makeChargeService from "../../src/services/chargesService";
 import makeCustomerService from "../../src/services/customersService";
 import makeJobsService from "../../src/services/jobsService";
 import makePaymentMethodService from "../../src/services/paymentMethodsService";
+import dotenv from "dotenv";
 
-const stripeApiKey =
-  "sk_test_51HKsbdHa1XCU8vuaYYjs3ehwiTJRC7c3bfIOXqQFZSw912EQSkt68XcJNjw6Up2FhrHrwAYHleojABSfivJu7UPY00DBUCiTil";
+dotenv.config();
+
+const chargesService = makeChargeService(Charge, ChargeAttempt);
+const customersService = makeCustomerService(Customer);
+const stripe = new Stripe(process.env.STRIPE_API_KEY as string, { apiVersion: "2020-03-02" });
+const paymentMethodsService = makePaymentMethodService(PaymentMethod);
+const subscriptionsService = makeSubscriptionService(
+  Subscription,
+  SubscriptionSpell,
+  chargesService,
+  customersService,
+  stripe,
+  paymentMethodsService
+);
+const agenda = new Agenda();
+const jobsService = makeJobsService(agenda, subscriptionsService, chargesService);
 
 describe("subscriptionsService", () => {
-  const chargesService = makeChargeService(Charge, ChargeAttempt);
-  const customersService = makeCustomerService(Customer);
-  const stripe = new Stripe(stripeApiKey, { apiVersion: "2020-03-02" });
-  const paymentMethodsService = makePaymentMethodService(PaymentMethod);
-  const subscriptionsService = makeSubscriptionService(
-    Subscription,
-    SubscriptionSpell,
-    chargesService,
-    customersService,
-    stripe,
-    paymentMethodsService
-  );
-  const agenda = new Agenda();
-  const jobsService = makeJobsService(agenda, subscriptionsService, chargesService);
-
   beforeEach(() => {
     sinon.restore();
   });
@@ -135,11 +135,11 @@ describe("subscriptionsService", () => {
       const stripePaymentIntent = { id: "stripePaymentIntent" } as Stripe.PaymentIntent;
       const stripeCustomer = { id: "stripeCustomer" } as Stripe.Customer;
 
-      sinon.stub(stripe.paymentIntents, "create").resolves(stripePaymentIntent);
       sinon.stub(chargesService, "findCharge").resolves(charge);
       sinon.stub(subscriptionsService, "findSubscription").resolves(subscription);
       sinon.stub(subscriptionsService, "findSubscriptionSpell").resolves(subscriptionSpell);
       sinon.stub(paymentMethodsService, "findPaymentMethod").resolves(paymentMethod);
+      sinon.stub(stripe.paymentIntents, "create").resolves(stripePaymentIntent);
       const updateChargeAttempt = sinon.stub(chargesService, "updateChargeAttempt");
       const updateCharge = sinon.stub(chargesService, "updateCharge");
       const updateSubscription = sinon.stub(subscriptionsService, "updateSubscription");
