@@ -1,0 +1,22 @@
+type Query {
+  findCustomers: FindCustomersPayload
+}
+
+type Mutation {
+  createCustomer(input: CreateCustomerInput!): CreateCustomerPayload!
+}
+
+type FindCustomersPayload {
+  data: [Customer]
+}
+type CreateCustomerPayload {
+  customer: Customer!
+}
+input CreateCustomerInput {
+  name: String!
+}
+
+type Customer {
+  id: ID
+  name: String
+}
