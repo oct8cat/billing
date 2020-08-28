@@ -1,9 +1,11 @@
 import supertest from "supertest";
 import makeApolloService from "../../src/services/apolloService";
+import makeCtx from "../../src/graphql/ctx";
 
 const typeDefs = `type Query { noop: String }`;
 const resolvers = {};
-const apolloService = makeApolloService(typeDefs, resolvers);
+const ctx = makeCtx();
+const apolloService = makeApolloService(typeDefs, resolvers, ctx);
 
 describe("services", () => {
   describe("apolloService", () => {

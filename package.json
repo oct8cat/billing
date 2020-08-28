@@ -1,13 +1,14 @@
 {
   "name": "billing",
   "version": "1.0.0",
-  "main": "index.js",
+  "main": "src/bin/billingd.ts",
   "directories": {
     "test": "test"
   },
   "scripts": {
     "test": "mocha",
-    "fix": "prettier --write ."
+    "fix": "prettier --write .",
+    "start": "nodemon -w src"
   },
   "keywords": [],
   "author": "Sergey Elsukov <oct8cat@gmail.com>",
@@ -20,6 +21,7 @@
     "@types/sinon": "^9.0.5",
     "@types/supertest": "^2.0.10",
     "mocha": "^8.1.1",
+    "nodemon": "^2.0.4",
     "prettier": "^2.0.5",
     "sinon": "^9.0.3",
     "supertest": "^4.0.2",
@@ -52,5 +54,8 @@
   "description": "",
   "prettier": {
     "printWidth": 120
+  },
+  "nodemon": {
+    "exec": "ts-node"
   }
 }
