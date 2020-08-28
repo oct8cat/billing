@@ -9,8 +9,8 @@ export enum EChargeStatus {
 }
 
 export type TStripeChargeData = {
-  stripeCustomer: string;
-  stripePaymentIntent: string;
+  customer: string;
+  paymentIntent: string;
 };
 
 export type TChargeData = TStripeChargeData;

@@ -119,10 +119,10 @@ export default (
     const paymentMethodData = paymentMethod.data as TStripePaymentMethodData;
 
     const stripePaymentIntent = await stripe.paymentIntents.create({
-      customer: paymentMethodData.stripeCustomer,
+      customer: paymentMethodData.customer,
       amount: subscriptionSpell.amount,
       currency: subscriptionSpell.currency,
-      payment_method: paymentMethodData.stripePaymentMethod,
+      payment_method: paymentMethodData.paymentMethod,
       confirm: true,
     });
 
@@ -134,8 +134,8 @@ export default (
       status: EChargeStatus.SUCCESS,
       nextChargeAttemptAt: null,
       data: {
-        stripePaymentIntent: stripePaymentIntent.id,
-        stripeCustomer: paymentMethodData.stripeCustomer,
+        paymentIntent: stripePaymentIntent.id,
+        customer: paymentMethodData.customer,
       },
     });
 

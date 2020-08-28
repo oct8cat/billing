@@ -4,9 +4,14 @@ export enum EPaymentMethodProvider {
   STRIPE = "stripe",
 }
 
-export type TStripePaymentMethodData = { stripePaymentMethod: string; stripeCustomer: string };
+export type TStripePaymentMethodData = {
+  paymentMethod: string;
+  customer: string;
+};
 
-export type TPaypalPaymentMethodData = { somePaypalToken: string };
+export type TPaypalPaymentMethodData = {
+  paypalToken: string;
+};
 
 export type TPaymentMethodData = TStripePaymentMethodData | TPaypalPaymentMethodData;
 

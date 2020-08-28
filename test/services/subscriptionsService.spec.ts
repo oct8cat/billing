@@ -1,6 +1,7 @@
 import sinon from "sinon";
 import Agenda from "agenda";
 import Stripe from "stripe";
+import dotenv from "dotenv";
 import { EJob } from "../../src/types";
 
 import { Subscription } from "../../src/models/Subscription";
@@ -15,7 +16,6 @@ import makeChargeService from "../../src/services/chargesService";
 import makeCustomerService from "../../src/services/customersService";
 import makeJobsService from "../../src/services/jobsService";
 import makePaymentMethodService from "../../src/services/paymentMethodsService";
-import dotenv from "dotenv";
 
 dotenv.config();
 
@@ -127,13 +127,9 @@ describe("subscriptionsService", () => {
       const customer = new Customer();
       const charge = new Charge({ subscription, customer });
       const chargeAttempt = new ChargeAttempt();
-      const paymentMethodData: TStripePaymentMethodData = {
-        stripePaymentMethod: "stripePaymentMethod",
-        stripeCustomer: "stripeCustomer",
-      };
+      const paymentMethodData: TStripePaymentMethodData = { paymentMethod: "paymentMethod", customer: "customer" };
       const paymentMethod = new PaymentMethod({ data: paymentMethodData });
       const stripePaymentIntent = { id: "stripePaymentIntent" } as Stripe.PaymentIntent;
-      const stripeCustomer = { id: "stripeCustomer" } as Stripe.Customer;
 
       sinon.stub(chargesService, "findCharge").resolves(charge);
       sinon.stub(subscriptionsService, "findSubscription").resolves(subscription);
@@ -153,8 +149,8 @@ describe("subscriptionsService", () => {
         status: EChargeStatus.SUCCESS,
         nextChargeAttemptAt: null,
         data: {
-          stripeCustomer: stripeCustomer.id,
-          stripePaymentIntent: stripePaymentIntent.id,
+          customer: paymentMethodData.customer,
+          paymentIntent: stripePaymentIntent.id,
         },
       });
       sinon.assert.calledWith(updateSubscription, subscription, {
